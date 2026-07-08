@@ -6,13 +6,18 @@ source scripts/env.sh
 APP=$(cd terraform && terraform output -raw emr_application_id)
 ROLE=$(cd terraform && terraform output -raw emr_job_role_arn)
 ENTRY="s3://${BUCKET}/code/spark"
-PKGS="org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.5.2,software.amazon.awssdk:bundle:2.20.160"
-SPARK_PARAMS="--conf spark.jars.packages=${PKGS} --py-files ${ENTRY}/iceberg_conf.py"
+# EMR Serverless has no internet egress, so we cannot resolve Maven packages.
+# EMR 7.1 ships Iceberg + the AWS SDK on-image; point at the bundled jar.
+ICEBERG_JAR="/usr/share/aws/iceberg/lib/iceberg-spark3-runtime.jar"
+SPARK_PARAMS="--conf spark.jars=${ICEBERG_JAR} --py-files ${ENTRY}/iceberg_conf.py"
+
+LOGCFG="{\"monitoringConfiguration\":{\"s3MonitoringConfiguration\":{\"logUri\":\"s3://${BUCKET}/emr-logs/\"}}}"
 
 submit() { # $1=script  $2=json-args
   local jid
   jid=$(aws emr-serverless start-job-run \
         --application-id "$APP" --execution-role-arn "$ROLE" \
+        --configuration-overrides "$LOGCFG" \
         --job-driver "{\"sparkSubmit\":{\"entryPoint\":\"${ENTRY}/$1\",\"entryPointArguments\":[$2],\"sparkSubmitParameters\":\"${SPARK_PARAMS}\"}}" \
         --query 'jobRunId' --output text)
   echo "  $1 -> job $jid"

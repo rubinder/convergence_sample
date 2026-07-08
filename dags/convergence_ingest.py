@@ -12,8 +12,7 @@ APP = Variable.get("emr_application_id")
 ROLE = Variable.get("emr_job_role_arn")
 ENTRY = f"s3://{BUCKET}/code/spark"
 COMMON = (
-    "--conf spark.jars.packages=org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.5.2,"
-    "software.amazon.awssdk:bundle:2.20.160 "
+    "--conf spark.jars=/usr/share/aws/iceberg/lib/iceberg-spark3-runtime.jar "
     f"--py-files {ENTRY}/iceberg_conf.py"
 )
 

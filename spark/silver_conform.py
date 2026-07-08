@@ -2,7 +2,7 @@ import argparse
 
 from pyspark.sql import functions as F, Window
 
-from spark.iceberg_conf import spark_session
+from iceberg_conf import spark_session
 
 
 def main():
