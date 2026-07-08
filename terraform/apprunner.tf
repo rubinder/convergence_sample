@@ -71,7 +71,10 @@ resource "aws_apprunner_service" "dashboard" {
   }
 
   health_check_configuration {
-    path     = "/healthz"
-    protocol = "HTTP"
+    protocol            = "TCP"
+    interval            = 10
+    timeout             = 5
+    healthy_threshold   = 1
+    unhealthy_threshold = 5
   }
 }

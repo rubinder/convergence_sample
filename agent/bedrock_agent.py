@@ -15,7 +15,10 @@ from agent.agent_config import SYSTEM_PROMPT
 from semantic import reach
 from semantic.validate import InvalidInput
 
-MODEL_ID = os.getenv("BEDROCK_MODEL", "us.anthropic.claude-opus-4-8")
+# Claude on Bedrock. Opus 4.8 requires a one-click model-access grant in the
+# Bedrock console; Sonnet 4.5 is access-granted on this account and works today.
+# Override with BEDROCK_MODEL once Opus access is enabled.
+MODEL_ID = os.getenv("BEDROCK_MODEL", "us.anthropic.claude-sonnet-4-5-20250929-v1:0")
 _REGION = os.getenv("AWS_REGION", "us-east-1")
 
 _TOOLS = [
