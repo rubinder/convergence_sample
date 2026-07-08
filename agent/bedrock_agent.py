@@ -15,11 +15,24 @@ from agent.agent_config import SYSTEM_PROMPT
 from semantic import reach
 from semantic.validate import InvalidInput
 
-# Claude on Bedrock. Opus 4.8 requires a one-click model-access grant in the
-# Bedrock console; Sonnet 4.5 is access-granted on this account and works today.
-# Override with BEDROCK_MODEL once Opus access is enabled.
-MODEL_ID = os.getenv("BEDROCK_MODEL", "us.anthropic.claude-sonnet-4-5-20250929-v1:0")
 _REGION = os.getenv("AWS_REGION", "us-east-1")
+
+# Preference order for the Bedrock model behind the agent. Claude is preferred;
+# Amazon Nova is the always-available backstop so the agent works even before
+# the account's Anthropic model-access / use-case form is approved. Set
+# BEDROCK_MODEL to pin one explicitly (e.g. us.anthropic.claude-opus-4-8 once
+# Opus access is granted).
+_MODEL_CANDIDATES = (
+    [os.environ["BEDROCK_MODEL"]]
+    if os.getenv("BEDROCK_MODEL")
+    else [
+        "us.anthropic.claude-opus-4-8",
+        "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+        "us.amazon.nova-pro-v1:0",
+        "us.amazon.nova-lite-v1:0",
+    ]
+)
+_picked_model = None
 
 _TOOLS = [
     {
@@ -103,12 +116,36 @@ def _run_tool(name: str, params: dict) -> dict:
         return {"error": f"{name} failed"}
 
 
+def _pick_model(client) -> str:
+    """Return the first candidate model this account can actually invoke."""
+    global _picked_model
+    if _picked_model:
+        return _picked_model
+    from botocore.exceptions import ClientError
+
+    last_err = None
+    for m in _MODEL_CANDIDATES:
+        try:
+            client.converse(
+                modelId=m,
+                messages=[{"role": "user", "content": [{"text": "ok"}]}],
+                inferenceConfig={"maxTokens": 5},
+            )
+            _picked_model = m
+            return m
+        except ClientError as e:
+            last_err = e
+            continue
+    raise last_err or RuntimeError("no invokable Bedrock model")
+
+
 def chat(prompt: str, max_turns: int = 6) -> str:
     client = boto3.client("bedrock-runtime", region_name=_REGION)
+    model_id = _pick_model(client)
     messages = [{"role": "user", "content": [{"text": prompt}]}]
     for _ in range(max_turns):
         resp = client.converse(
-            modelId=MODEL_ID,
+            modelId=model_id,
             system=[{"text": SYSTEM_PROMPT}],
             messages=messages,
             toolConfig={"tools": _TOOLS},
