@@ -40,6 +40,15 @@
   .bar-lbl { font-size: .72rem; color: var(--muted); margin-top: .35rem; text-align: center; }
   .stat { display: inline-block; margin-right: 2rem; }
   .stat b { display: block; font-size: 1.6rem; color: var(--brand); }
+  .conv { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; margin-top: .5rem; }
+  .conv .cell { border: 1px solid var(--line); border-radius: 10px; padding: .9rem 1rem; }
+  .conv .cell.combined { border-color: var(--brand); background: color-mix(in srgb, var(--bg) 88%, var(--brand)); }
+  .conv .k { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .conv .v { font-size: 1.7rem; font-weight: 700; margin-top: .25rem; }
+  .conv .cell.digital .v { color: #2a9d8f; }
+  .conv .cell.linear .v { color: #e07a3c; }
+  .conv .cell.combined .v { color: var(--brand); }
+  @media (max-width: 640px) { .conv { grid-template-columns: 1fr; } }
   pre { white-space: pre-wrap; background: color-mix(in srgb, var(--bg) 90%, var(--muted)); padding: .75rem; border-radius: 8px; }
   .muted { color: var(--muted); font-size: .85rem; }
 </style>
@@ -56,6 +65,13 @@
   <div id="stats"></div>
   <div class="bars" id="bars"></div>
   <p class="muted" id="note"></p>
+</div>
+
+<div class="card">
+  <h3>Sell across linear + digital — as one audience</h3>
+  <p class="muted">The convergence view: reach on each delivery method, and the deduped combined reach (a person seen on both is counted once) — one place to plan and sell both.</p>
+  <div class="conv" id="conv"></div>
+  <p class="muted" id="conv-note"></p>
 </div>
 
 <div class="card">

@@ -4,26 +4,43 @@ from semantic.validate import valid_name, valid_date, valid_segments
 
 DB = "convergence"
 _HLL = "cardinality(merge(cast(hll_sketch as HyperLogLog)))"
+DELIVERY_TYPES = ("digital", "linear")
+
+
+def _norm(value, field):
+    # Identifiers in the lake are lowercase; normalize so callers (and the
+    # NL agent) match the data regardless of the casing they used.
+    return valid_name(value, field).lower()
 
 
 def _seg_clause(segment):
-    # segment is validated before interpolation; safe against injection.
-    return f" and segment = '{valid_name(segment, 'segment')}'" if segment else ""
+    return f" and segment = '{_norm(segment, 'segment')}'" if segment else ""
 
 
-def daily_reach_sql(campaign: str, segment, day: str) -> str:
-    campaign = valid_name(campaign, "campaign")
+def _delivery_clause(delivery):
+    if not delivery:
+        return ""
+    d = _norm(delivery, "delivery")
+    if d not in DELIVERY_TYPES:
+        from semantic.validate import InvalidInput
+
+        raise InvalidInput("delivery must be 'digital' or 'linear'")
+    return f" and delivery_type = '{d}'"
+
+
+def daily_reach_sql(campaign, segment, day, delivery=None):
+    campaign = _norm(campaign, "campaign")
     day = valid_date(day, "day")
     return (
         f"select sum(exact_reach) as reach, sum(impressions) as impressions "
         f"from {DB}.daily_reach_snapshot "
         f"where campaign_id = '{campaign}' and day = date '{day}'"
-        f"{_seg_clause(segment)}"
+        f"{_seg_clause(segment)}{_delivery_clause(delivery)}"
     )
 
 
-def cumulative_reach_sql(campaign: str, segment, start: str, end: str) -> str:
-    campaign = valid_name(campaign, "campaign")
+def cumulative_reach_sql(campaign, segment, start, end, delivery=None):
+    campaign = _norm(campaign, "campaign")
     start = valid_date(start, "start")
     end = valid_date(end, "end")
     return (
@@ -31,15 +48,15 @@ def cumulative_reach_sql(campaign: str, segment, start: str, end: str) -> str:
         f"from {DB}.daily_reach_snapshot "
         f"where campaign_id = '{campaign}' "
         f"and day between date '{start}' and date '{end}'"
-        f"{_seg_clause(segment)}"
+        f"{_seg_clause(segment)}{_delivery_clause(delivery)}"
     )
 
 
-def segment_merge_sql(campaign: str, segments: list, start: str, end: str) -> str:
-    campaign = valid_name(campaign, "campaign")
+def segment_merge_sql(campaign, segments, start, end):
+    campaign = _norm(campaign, "campaign")
     start = valid_date(start, "start")
     end = valid_date(end, "end")
-    segments = valid_segments(segments)
+    segments = [s.lower() for s in valid_segments(segments)]
     seg_list = ", ".join(f"'{s}'" for s in segments)
     return (
         f"select {_HLL} as reach "
@@ -50,46 +67,65 @@ def segment_merge_sql(campaign: str, segments: list, start: str, end: str) -> st
     )
 
 
-# ---- live-query wrappers (imported lazily so SQL-builder tests need no boto3) ----
+# ---- live-query wrappers ----
 
 
-def _run(sql: str):
-    from semantic.athena_client import run_query
-
-    return run_query(sql)
-
-
-# module-level alias so tests can patch `semantic.reach.run_query`
 def run_query(sql: str):
-    return _run(sql)
+    from semantic.athena_client import run_query as _rq
+
+    return _rq(sql)
 
 
 def _one(sql: str, key: str = "reach") -> dict:
     t0 = time.time()
     rows = run_query(sql)
-    val = rows[0].get(key) if rows and rows[0].get(key) is not None else 0
-    # Note: `sql` is returned for the demo's provenance display. It is safe to
-    # expose because all inputs are validated (semantic/validate.py), so it is
-    # not a blind-SQLi oracle. Raw result rows are intentionally NOT echoed.
+    raw = rows[0].get(key) if rows and rows[0].get(key) is not None else None
+    # `found` distinguishes a genuine 0 from "no rows matched" (e.g. an unknown
+    # campaign/segment) so callers never mistake a miss for zero reach.
     return {
-        "reach": int(val),
+        "reach": int(raw) if raw is not None else 0,
+        "found": raw is not None,
         "sql": sql,
         "latency_ms": int((time.time() - t0) * 1000),
     }
 
 
-def get_daily_reach(campaign, segment, day):
-    return _one(daily_reach_sql(campaign, segment, day))
+def get_daily_reach(campaign, segment, day, delivery=None):
+    return _one(daily_reach_sql(campaign, segment, day, delivery))
 
 
-def get_cumulative_reach(campaign, segment, start, end):
-    return _one(cumulative_reach_sql(campaign, segment, start, end))
+def get_cumulative_reach(campaign, segment, start, end, delivery=None):
+    return _one(cumulative_reach_sql(campaign, segment, start, end, delivery))
 
 
 def merge_segment_reach(campaign, segments, start, end):
     out = _one(segment_merge_sql(campaign, segments, start, end))
     out["segments"] = segments
     return out
+
+
+def get_convergence_reach(campaign, segment, start, end):
+    """The convergence selling view: reach across linear + digital as one.
+
+    Returns digital-only, linear-only, and the HLL-deduped combined reach — the
+    combined figure counts a person once even if reached on both delivery
+    methods, which is the whole point of selling the two as a single audience.
+    """
+    digital = get_cumulative_reach(campaign, segment, start, end, "digital")["reach"]
+    linear = get_cumulative_reach(campaign, segment, start, end, "linear")["reach"]
+    out = get_cumulative_reach(campaign, segment, start, end)  # both, deduped
+    combined = out["reach"]
+    return {
+        "campaign": campaign,
+        "segment": segment,
+        "window": [start, end],
+        "digital": digital,
+        "linear": linear,
+        "combined": combined,
+        "overlap": max(0, digital + linear - combined),
+        "found": out["found"],
+        "sql": out["sql"],
+    }
 
 
 def list_campaigns():

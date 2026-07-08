@@ -38,13 +38,14 @@ _TOOLS = [
     {
         "toolSpec": {
             "name": "get_daily_reach",
-            "description": "Exact daily reach (unique individuals) for a campaign on a single day. Optionally filter by segment.",
+            "description": "Exact daily reach (unique individuals) for a campaign on a single day. Optionally filter by segment and/or delivery method (digital or linear).",
             "inputSchema": {"json": {
                 "type": "object",
                 "properties": {
                     "campaign": {"type": "string"},
                     "segment": {"type": "string"},
                     "day": {"type": "string", "description": "YYYY-MM-DD"},
+                    "delivery": {"type": "string", "description": "digital or linear (omit for both)"},
                 },
                 "required": ["campaign", "day"],
             }},
@@ -53,7 +54,7 @@ _TOOLS = [
     {
         "toolSpec": {
             "name": "get_cumulative_reach",
-            "description": "HLL-merged cumulative reach (deduped unique individuals) for a campaign across a date window. Optionally filter by segment.",
+            "description": "HLL-merged cumulative reach (deduped unique individuals) for a campaign across a date window. Optionally filter by segment and/or delivery method (digital or linear).",
             "inputSchema": {"json": {
                 "type": "object",
                 "properties": {
@@ -61,6 +62,23 @@ _TOOLS = [
                     "segment": {"type": "string"},
                     "start": {"type": "string", "description": "YYYY-MM-DD"},
                     "end": {"type": "string", "description": "YYYY-MM-DD"},
+                    "delivery": {"type": "string", "description": "digital or linear (omit for both)"},
+                },
+                "required": ["campaign", "start", "end"],
+            }},
+        }
+    },
+    {
+        "toolSpec": {
+            "name": "get_convergence_reach",
+            "description": "The unified linear+digital selling view: returns digital-only reach, linear-only reach, and the HLL-deduped COMBINED reach across both delivery methods (a person reached on both is counted once) plus the overlap. Use this when the user wants to sell or measure across linear and digital as one audience.",
+            "inputSchema": {"json": {
+                "type": "object",
+                "properties": {
+                    "campaign": {"type": "string"},
+                    "segment": {"type": "string"},
+                    "start": {"type": "string"},
+                    "end": {"type": "string"},
                 },
                 "required": ["campaign", "start", "end"],
             }},
@@ -99,9 +117,10 @@ _TOOLS = [
 ]
 
 _DISPATCH = {
-    "get_daily_reach": lambda p: reach.get_daily_reach(p["campaign"], p.get("segment"), p["day"]),
-    "get_cumulative_reach": lambda p: reach.get_cumulative_reach(p["campaign"], p.get("segment"), p["start"], p["end"]),
+    "get_daily_reach": lambda p: reach.get_daily_reach(p["campaign"], p.get("segment"), p["day"], p.get("delivery")),
+    "get_cumulative_reach": lambda p: reach.get_cumulative_reach(p["campaign"], p.get("segment"), p["start"], p["end"], p.get("delivery")),
     "merge_segment_reach": lambda p: reach.merge_segment_reach(p["campaign"], p["segments"], p["start"], p["end"]),
+    "get_convergence_reach": lambda p: reach.get_convergence_reach(p["campaign"], p.get("segment"), p["start"], p["end"]),
     "list_campaigns": lambda p: {"campaigns": reach.list_campaigns()},
     "list_segments": lambda p: {"segments": reach.list_segments()},
 }

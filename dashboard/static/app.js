@@ -49,6 +49,22 @@ async function load() {
     `<span class="stat">Overlap (dedup)<b>${(sumDaily - cumVal).toLocaleString()}</b></span>`;
   document.getElementById("note").textContent =
     "Cumulative < sum-of-daily because the same individuals are reached on multiple days — HLL sketches dedup them without rescanning raw impressions.";
+  await loadConvergence(campaign, segment, segQ);
+}
+
+async function loadConvergence(campaign, segment, segQ) {
+  const c = await j(`/api/reach/convergence?campaign=${campaign}${segQ}&start=${START}&end=${END}`);
+  const cells = [
+    ["digital", "Digital (ad server)", c.digital],
+    ["linear", "Linear (national TV)", c.linear],
+    ["combined", "Combined — deduped", c.combined],
+  ];
+  document.getElementById("conv").innerHTML = cells.map(([cls, k, v]) =>
+    `<div class="cell ${cls}"><div class="k">${k}</div><div class="v">${(Number(v) || 0).toLocaleString()}</div></div>`
+  ).join("");
+  const seg = segment || "all segments";
+  document.getElementById("conv-note").textContent =
+    `Digital + linear reach ${(c.digital + c.linear).toLocaleString()} people, but ${(c.overlap || 0).toLocaleString()} were reached on both — so the true unified reach across delivery methods for ${campaign} / ${seg} is ${(Number(c.combined) || 0).toLocaleString()}.`;
 }
 
 async function ask() {

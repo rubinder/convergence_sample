@@ -7,13 +7,16 @@ log = logging.getLogger("convergence.reach_tools")
 
 TOOLS = {
     "get_daily_reach": lambda p: reach.get_daily_reach(
-        p["campaign"], p.get("segment"), p["day"]
+        p["campaign"], p.get("segment"), p["day"], p.get("delivery")
     ),
     "get_cumulative_reach": lambda p: reach.get_cumulative_reach(
-        p["campaign"], p.get("segment"), p["start"], p["end"]
+        p["campaign"], p.get("segment"), p["start"], p["end"], p.get("delivery")
     ),
     "merge_segment_reach": lambda p: reach.merge_segment_reach(
         p["campaign"], p["segments"], p["start"], p["end"]
+    ),
+    "get_convergence_reach": lambda p: reach.get_convergence_reach(
+        p["campaign"], p.get("segment"), p["start"], p["end"]
     ),
     "list_campaigns": lambda p: {"campaigns": reach.list_campaigns()},
     "list_segments": lambda p: {"segments": reach.list_segments()},

@@ -63,6 +63,16 @@ def segment_merge(
     )
 
 
+@app.get("/api/reach/convergence")
+def convergence(
+    campaign: str,
+    segment: str | None = None,
+    start: str = "2026-07-01",
+    end: str = "2026-07-05",
+):
+    return _reach_or_400(reach.get_convergence_reach, campaign, segment, start, end)
+
+
 @app.get("/api/dimensions")
 def dimensions():
     try:
