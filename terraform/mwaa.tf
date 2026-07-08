@@ -126,7 +126,11 @@ resource "aws_iam_role_policy" "mwaa" {
     Statement = [{
       Effect = "Allow",
       Action = ["s3:*", "emr-serverless:*", "athena:*", "glue:*", "logs:*",
-      "iam:PassRole", "airflow:*", "cloudwatch:*"],
+        "iam:PassRole", "airflow:*", "cloudwatch:*",
+        # Celery executor broker + envelope encryption — required for the
+        # environment to finish starting, else it hangs in CREATING then fails.
+        "sqs:*", "kms:Decrypt", "kms:GenerateDataKey", "kms:DescribeKey",
+      "kms:Encrypt"],
       Resource = "*"
     }]
   })
