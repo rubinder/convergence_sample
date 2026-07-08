@@ -123,16 +123,37 @@ resource "aws_iam_role_policy" "mwaa" {
   role  = aws_iam_role.mwaa[0].id
   policy = jsonencode({
     Version = "2012-10-17",
-    Statement = [{
-      Effect = "Allow",
-      Action = ["s3:*", "emr-serverless:*", "athena:*", "glue:*", "logs:*",
-        "iam:PassRole", "airflow:*", "cloudwatch:*",
-        # Celery executor broker + envelope encryption — required for the
-        # environment to finish starting, else it hangs in CREATING then fails.
-        "sqs:*", "kms:Decrypt", "kms:GenerateDataKey", "kms:DescribeKey",
-      "kms:Encrypt"],
-      Resource = "*"
-    }]
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = ["s3:*", "emr-serverless:*", "athena:*", "glue:*", "logs:*",
+        "iam:PassRole", "airflow:*", "cloudwatch:*"],
+        Resource = "*"
+      },
+      {
+        # Celery broker — scoped to MWAA's own airflow-celery-* queues (AWS template).
+        Effect = "Allow",
+        Action = ["sqs:ChangeMessageVisibility", "sqs:DeleteMessage",
+          "sqs:GetQueueAttributes", "sqs:GetQueueUrl", "sqs:ReceiveMessage",
+        "sqs:SendMessage"],
+        Resource = "arn:aws:sqs:${var.region}:*:airflow-celery-*"
+      },
+      {
+        # Envelope encryption — restricted to the AWS services MWAA talks to.
+        Effect   = "Allow",
+        Action   = ["kms:Decrypt", "kms:DescribeKey", "kms:GenerateDataKey*", "kms:Encrypt"],
+        Resource = "*",
+        Condition = {
+          StringLike = {
+            "kms:ViaService" = [
+              "sqs.${var.region}.amazonaws.com",
+              "s3.${var.region}.amazonaws.com",
+              "logs.${var.region}.amazonaws.com",
+            ]
+          }
+        }
+      }
+    ]
   })
 }
 
