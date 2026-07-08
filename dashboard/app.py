@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 
@@ -75,20 +74,13 @@ def dimensions():
 
 @app.post("/api/chat")
 def chat(body: dict):
-    import boto3
-
-    agent_arn = os.getenv("AGENT_ARN", "")
-    if not agent_arn:
-        return {"reply": "(agent not configured: set AGENT_ARN)"}
+    prompt = (body.get("prompt") or "").strip()
+    if not prompt:
+        return {"reply": "Ask a reach question, e.g. 'cumulative reach of camp_finals for sports last week'."}
     try:
-        client = boto3.client(
-            "bedrock-agentcore", region_name=os.getenv("AWS_REGION", "us-east-1")
-        )
-        resp = client.invoke_agent_runtime(
-            agentRuntimeArn=agent_arn,
-            payload=json.dumps({"prompt": body.get("prompt", "")}),
-        )
-        return {"reply": resp["response"].read().decode()}
+        from agent.bedrock_agent import chat as agent_chat
+
+        return {"reply": agent_chat(prompt)}
     except Exception:
         log.exception("agent invoke failed")
         return {"reply": "(agent unavailable)"}

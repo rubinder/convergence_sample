@@ -3,6 +3,7 @@ WORKDIR /app
 COPY dashboard/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY semantic ./semantic
+COPY agent ./agent
 COPY dashboard ./dashboard
 ENV AWS_REGION=us-east-1 ATHENA_WG=convergence-wg
 EXPOSE 8080
