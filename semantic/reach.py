@@ -1,14 +1,19 @@
 import time
 
+from semantic.validate import valid_name, valid_date, valid_segments
+
 DB = "convergence"
 _HLL = "cardinality(merge(cast(hll_sketch as HyperLogLog)))"
 
 
 def _seg_clause(segment):
-    return f" and segment = '{segment}'" if segment else ""
+    # segment is validated before interpolation; safe against injection.
+    return f" and segment = '{valid_name(segment, 'segment')}'" if segment else ""
 
 
 def daily_reach_sql(campaign: str, segment, day: str) -> str:
+    campaign = valid_name(campaign, "campaign")
+    day = valid_date(day, "day")
     return (
         f"select sum(exact_reach) as reach, sum(impressions) as impressions "
         f"from {DB}.daily_reach_snapshot "
@@ -18,6 +23,9 @@ def daily_reach_sql(campaign: str, segment, day: str) -> str:
 
 
 def cumulative_reach_sql(campaign: str, segment, start: str, end: str) -> str:
+    campaign = valid_name(campaign, "campaign")
+    start = valid_date(start, "start")
+    end = valid_date(end, "end")
     return (
         f"select {_HLL} as reach "
         f"from {DB}.daily_reach_snapshot "
@@ -28,6 +36,10 @@ def cumulative_reach_sql(campaign: str, segment, start: str, end: str) -> str:
 
 
 def segment_merge_sql(campaign: str, segments: list, start: str, end: str) -> str:
+    campaign = valid_name(campaign, "campaign")
+    start = valid_date(start, "start")
+    end = valid_date(end, "end")
+    segments = valid_segments(segments)
     seg_list = ", ".join(f"'{s}'" for s in segments)
     return (
         f"select {_HLL} as reach "
@@ -56,11 +68,13 @@ def _one(sql: str, key: str = "reach") -> dict:
     t0 = time.time()
     rows = run_query(sql)
     val = rows[0].get(key) if rows and rows[0].get(key) is not None else 0
+    # Note: `sql` is returned for the demo's provenance display. It is safe to
+    # expose because all inputs are validated (semantic/validate.py), so it is
+    # not a blind-SQLi oracle. Raw result rows are intentionally NOT echoed.
     return {
         "reach": int(val),
         "sql": sql,
         "latency_ms": int((time.time() - t0) * 1000),
-        "rows": rows,
     }
 
 

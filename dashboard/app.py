@@ -1,13 +1,27 @@
 import json
+import logging
 import os
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from semantic import reach
+from semantic.validate import InvalidInput
 
+log = logging.getLogger("convergence.dashboard")
 app = FastAPI(title="Convergence Reach")
+
+
+def _reach_or_400(fn, *args):
+    """Run a reach call, mapping bad input to 400 and hiding internals on 500."""
+    try:
+        return fn(*args)
+    except InvalidInput:
+        raise HTTPException(status_code=400, detail="invalid request parameters")
+    except Exception:
+        log.exception("reach query failed")
+        raise HTTPException(status_code=503, detail="reach service unavailable")
 _here = os.path.dirname(__file__)
 app.mount("/static", StaticFiles(directory=os.path.join(_here, "static")), name="static")
 
@@ -25,7 +39,7 @@ def healthz():
 
 @app.get("/api/reach/daily")
 def daily(campaign: str, segment: str | None = None, day: str = "2026-07-03"):
-    return reach.get_daily_reach(campaign, segment, day)
+    return _reach_or_400(reach.get_daily_reach, campaign, segment, day)
 
 
 @app.get("/api/reach/cumulative")
@@ -35,7 +49,7 @@ def cumulative(
     start: str = "2026-07-01",
     end: str = "2026-07-05",
 ):
-    return reach.get_cumulative_reach(campaign, segment, start, end)
+    return _reach_or_400(reach.get_cumulative_reach, campaign, segment, start, end)
 
 
 @app.get("/api/reach/segment-merge")
@@ -45,15 +59,18 @@ def segment_merge(
     start: str = "2026-07-01",
     end: str = "2026-07-05",
 ):
-    return reach.merge_segment_reach(campaign, segments.split(","), start, end)
+    return _reach_or_400(
+        reach.merge_segment_reach, campaign, segments.split(","), start, end
+    )
 
 
 @app.get("/api/dimensions")
 def dimensions():
     try:
         return {"campaigns": reach.list_campaigns(), "segments": reach.list_segments()}
-    except Exception as e:
-        return {"campaigns": [], "segments": [], "error": str(e)}
+    except Exception:
+        log.exception("dimensions lookup failed")
+        return {"campaigns": [], "segments": []}
 
 
 @app.post("/api/chat")
@@ -72,5 +89,6 @@ def chat(body: dict):
             payload=json.dumps({"prompt": body.get("prompt", "")}),
         )
         return {"reply": resp["response"].read().decode()}
-    except Exception as e:
-        return {"reply": f"(agent unavailable: {e})"}
+    except Exception:
+        log.exception("agent invoke failed")
+        return {"reply": "(agent unavailable)"}

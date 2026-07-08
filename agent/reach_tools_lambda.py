@@ -1,4 +1,9 @@
+import logging
+
 from semantic import reach
+from semantic.validate import InvalidInput
+
+log = logging.getLogger("convergence.reach_tools")
 
 TOOLS = {
     "get_daily_reach": lambda p: reach.get_daily_reach(
@@ -22,5 +27,11 @@ def handler(event, context):
         return {"error": f"unknown tool: {tool}", "available": list(TOOLS)}
     try:
         return TOOLS[tool](params)
-    except Exception as e:  # surface to the agent
-        return {"error": str(e)}
+    except InvalidInput:
+        # Reject prompt-injected / malformed identifiers without echoing them back.
+        return {"error": "invalid parameters"}
+    except KeyError as e:
+        return {"error": f"missing parameter: {e.args[0]}"}
+    except Exception:
+        log.exception("reach tool failed: %s", tool)
+        return {"error": "reach tool failed"}

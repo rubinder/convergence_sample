@@ -19,3 +19,6 @@ aws-exports.json
 
 # OS
 .DS_Store
+build/
+landing_local/
+.terraform.lock.hcl
