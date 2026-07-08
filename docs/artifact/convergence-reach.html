@@ -1,0 +1,335 @@
+<title>Convergence Reach Lakehouse</title>
+<style>
+  :root {
+    --ink: #0e1526;
+    --surface: #161f35;
+    --surface-2: #1d2842;
+    --line: #2a3757;
+    --text: #e8edf7;
+    --muted: #93a0b8;
+    --faint: #6b7896;
+    --teal: #3dd6c4;   /* digital / streaming */
+    --coral: #ff7a59;  /* linear / broadcast on-air */
+    --accent: #5ee0d2; /* the merged signal */
+    --good: #52d17f;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: "Inter var", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --maxw: 1080px;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --ink: #f5f7fb; --surface: #ffffff; --surface-2: #f0f3fa;
+      --line: #d9e0ee; --text: #131b2e; --muted: #566079;
+      --faint: #8b95ae; --teal: #10a99a; --coral: #e05a35; --accent: #12a294;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #0e1526; --surface: #161f35; --surface-2: #1d2842; --line: #2a3757;
+    --text: #e8edf7; --muted: #93a0b8; --faint: #6b7896;
+    --teal: #3dd6c4; --coral: #ff7a59; --accent: #5ee0d2;
+  }
+  :root[data-theme="light"] {
+    --ink: #f5f7fb; --surface: #ffffff; --surface-2: #f0f3fa; --line: #d9e0ee;
+    --text: #131b2e; --muted: #566079; --faint: #8b95ae;
+    --teal: #10a99a; --coral: #e05a35; --accent: #12a294;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--ink); color: var(--text);
+    font-family: var(--sans); line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    background-image:
+      radial-gradient(900px 500px at 82% -8%, color-mix(in srgb, var(--teal) 12%, transparent), transparent),
+      radial-gradient(760px 460px at 10% -6%, color-mix(in srgb, var(--coral) 10%, transparent), transparent);
+    background-repeat: no-repeat;
+  }
+  .wrap { max-width: var(--maxw); margin-inline: auto; padding: 0 24px; }
+  section { padding: 60px 0; border-top: 1px solid var(--line); }
+  section:first-of-type { border-top: 0; }
+
+  .eyebrow {
+    font-family: var(--mono); font-size: .74rem; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--faint); margin: 0 0 14px;
+  }
+  h1, h2, h3 { text-wrap: balance; margin: 0; letter-spacing: -0.02em; }
+  h1 { font-size: clamp(2.1rem, 5.4vw, 3.5rem); font-weight: 800; line-height: 1.04; }
+  h2 { font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 750; }
+  h3 { font-size: 1.06rem; font-weight: 700; letter-spacing: -0.01em; }
+  p { color: var(--muted); max-width: 65ch; }
+  .lead { font-size: 1.18rem; color: var(--text); max-width: 60ch; }
+
+  /* hero */
+  .hero { padding-top: 64px; }
+  .signal { display: flex; align-items: center; gap: 10px; margin-bottom: 26px; }
+  .sig-line { height: 2px; flex: 1; max-width: 120px; border-radius: 2px; }
+  .sig-line.d { background: linear-gradient(90deg, transparent, var(--teal)); }
+  .sig-line.l { background: linear-gradient(90deg, var(--coral), transparent); }
+  .sig-node {
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--faint);
+    border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; white-space: nowrap;
+  }
+  .sig-merge { width: 10px; height: 10px; border-radius: 50%; background: var(--accent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent); }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+  a.btn {
+    display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
+    font-weight: 650; font-size: .95rem; padding: 11px 18px; border-radius: 10px;
+    border: 1px solid var(--line); color: var(--text); background: var(--surface);
+    transition: transform .15s ease, border-color .15s ease, background .15s ease;
+  }
+  a.btn:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
+  a.btn.primary { background: var(--accent); color: #06121a; border-color: transparent; }
+  a.btn .arrow { font-family: var(--mono); }
+  .statusline {
+    margin-top: 24px; font-family: var(--mono); font-size: .78rem; color: var(--faint);
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--good); display: inline-block; }
+
+  /* two-column convergence */
+  .duo { display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; align-items: stretch; margin-top: 28px; }
+  .feed {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 22px;
+  }
+  .feed .tag { font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; }
+  .feed.d { border-top: 3px solid var(--teal); } .feed.d .tag { color: var(--teal); }
+  .feed.l { border-top: 3px solid var(--coral); } .feed.l .tag { color: var(--coral); }
+  .feed h3 { margin: 8px 0 6px; }
+  .feed p { font-size: .92rem; margin: 0; }
+  .converge { display: flex; align-items: center; justify-content: center; }
+  .converge span { font-family: var(--mono); color: var(--accent); font-size: 1.4rem; }
+
+  /* pipeline */
+  .flow-scroll { overflow-x: auto; padding-bottom: 6px; margin-top: 28px; }
+  .flow { display: flex; align-items: stretch; gap: 0; min-width: 760px; }
+  .stage { flex: 1; min-width: 120px; position: relative; }
+  .stage .card {
+    height: 100%; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 12px; padding: 14px 14px 16px; margin-right: 22px;
+  }
+  .stage:last-child .card { margin-right: 0; }
+  .stage:not(:last-child)::after {
+    content: "→"; position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
+    font-family: var(--mono); color: var(--faint);
+  }
+  .stage .n { font-family: var(--mono); font-size: .68rem; color: var(--faint); letter-spacing: .1em; }
+  .stage .name { font-weight: 700; margin: 4px 0 2px; font-size: .98rem; }
+  .stage .eng { font-family: var(--mono); font-size: .72rem; color: var(--accent); }
+  .stage .desc { font-size: .8rem; color: var(--muted); margin-top: 8px; line-height: 1.45; }
+
+  /* reach grains */
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 28px; }
+  .grain { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 22px; }
+  .grain .k { font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+  .grain h3 { margin: 10px 0 8px; }
+  .grain p { font-size: .9rem; margin: 0; }
+  .grain code { font-family: var(--mono); font-size: .82rem; color: var(--text);
+    background: var(--surface-2); padding: 2px 6px; border-radius: 6px; }
+
+  /* results */
+  .results { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 8px; margin-top: 28px; }
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border-radius: 12px; overflow: hidden; }
+  .tile { background: var(--surface); padding: 26px 22px; }
+  .tile .label { font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+  .tile .num { font-size: 2.6rem; font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums;
+    margin: 10px 0 2px; color: var(--text); }
+  .tile .num.accent { color: var(--accent); }
+  .tile .sub { font-size: .84rem; color: var(--muted); }
+  .tile .sub b { color: var(--coral); font-variant-numeric: tabular-nums; }
+  .proof { display: flex; gap: 10px; align-items: flex-start; margin-top: 18px; padding: 14px 18px;
+    font-size: .9rem; color: var(--muted); border-left: 2px solid var(--good); background: var(--surface-2); border-radius: 8px; }
+  .proof b { color: var(--text); }
+
+  /* hll note */
+  .note { display: grid; grid-template-columns: 1.2fr 1fr; gap: 26px; align-items: center; margin-top: 24px; }
+  .chiplist { display: flex; flex-direction: column; gap: 10px; }
+  .chip { font-family: var(--mono); font-size: .82rem; color: var(--muted); background: var(--surface);
+    border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .chip b { color: var(--accent); }
+
+  footer { border-top: 1px solid var(--line); padding: 34px 0 56px; }
+  .foot { display: flex; flex-wrap: wrap; gap: 24px 40px; }
+  .foot div { min-width: 150px; }
+  .foot .h { font-family: var(--mono); font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); margin-bottom: 8px; }
+  .foot .v { font-size: .9rem; color: var(--muted); }
+  .foot .v a { color: var(--accent); text-decoration: none; }
+
+  @media (max-width: 760px) {
+    .duo, .grid3, .tiles, .note { grid-template-columns: 1fr; }
+    .duo .converge { transform: rotate(90deg); }
+  }
+</style>
+
+<div class="wrap hero">
+  <section style="border:0; padding-top:56px;">
+    <div class="signal" aria-hidden="true">
+      <span class="sig-node">Digital · ad server</span>
+      <span class="sig-line d"></span>
+      <span class="sig-merge"></span>
+      <span class="sig-line l"></span>
+      <span class="sig-node">Linear · national TV</span>
+    </div>
+    <p class="eyebrow">WBD · Convergence · Reach measurement</p>
+    <h1>One audience across broadcast&nbsp;and&nbsp;stream.</h1>
+    <p class="lead" style="margin-top:18px;">
+      A cloud-native lakehouse that unifies digital and linear ad delivery into a single
+      data product, then measures the metric that actually prices a deal — <b style="color:var(--text)">reach</b>,
+      the count of unique individuals exposed — at exact and HyperLogLog-approximate grains.
+    </p>
+    <div class="cta">
+      <a class="btn primary" href="https://miatibcmck.us-east-1.awsapprunner.com" target="_blank" rel="noopener">
+        Open the live dashboard <span class="arrow">→</span></a>
+      <a class="btn" href="https://github.com/rubinder/convergence_sample" target="_blank" rel="noopener">
+        Source on GitHub</a>
+    </div>
+    <div class="statusline">
+      <span class="dot"></span> Live on AWS · us-east-1 · Iceberg lakehouse · Athena HLL · Bedrock agent
+    </div>
+  </section>
+</div>
+
+<div class="wrap">
+  <section>
+    <p class="eyebrow">The problem</p>
+    <h2>Two delivery methods, sold as one.</h2>
+    <p style="margin-top:12px;">
+      Internal WBD ad-sales teams have run linear and digital as two separate systems for years.
+      Convergence collapses that: manipulate broadcast and streaming as one inventory, without
+      making anyone reconcile two tools — and without double-counting a viewer who was reached in both.
+    </p>
+    <div class="duo">
+      <div class="feed d">
+        <div class="tag">Digital</div>
+        <h3>Ad server impressions</h3>
+        <p>Streaming and web delivery — Max, Discovery+ — logged per exposure with device and geo.</p>
+      </div>
+      <div class="converge" aria-hidden="true"><span>⋈</span></div>
+      <div class="feed l">
+        <div class="tag">Linear</div>
+        <h3>National TV delivery</h3>
+        <p>Broadcast networks — CNN, TNT, TBS — delivered against the same resolved individuals.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Architecture</p>
+    <h2>Landing to answer, one pipeline.</h2>
+    <p style="margin-top:12px;">
+      Spark does the heavy ingest; Athena/Presto owns the reach math so sketches merge live at query
+      time; MWAA orchestrates; a Bedrock agent and a public dashboard sit on top.
+    </p>
+    <div class="flow-scroll">
+      <div class="flow">
+        <div class="stage"><div class="card"><div class="n">01</div><div class="name">Landing</div><div class="eng">S3</div><div class="desc">Unified digital + linear exposure events.</div></div></div>
+        <div class="stage"><div class="card"><div class="n">02</div><div class="name">Bronze</div><div class="eng">EMR · Spark</div><div class="desc">Typed raw events, Iceberg, append-only.</div></div></div>
+        <div class="stage"><div class="card"><div class="n">03</div><div class="name">Silver</div><div class="eng">EMR · Spark</div><div class="desc">Conformed, deduped, identity-resolved.</div></div></div>
+        <div class="stage"><div class="card"><div class="n">04</div><div class="name">Gold</div><div class="eng">Athena · Presto</div><div class="desc">Daily snapshots + HLL sketches.</div></div></div>
+        <div class="stage"><div class="card"><div class="n">05</div><div class="name">Semantic</div><div class="eng">Reach fns</div><div class="desc">Daily / cumulative / segment-merge.</div></div></div>
+        <div class="stage"><div class="card"><div class="n">06</div><div class="name">Agent</div><div class="eng">Bedrock</div><div class="desc">NL reach Q&amp;A; tools = reach fns.</div></div></div>
+        <div class="stage"><div class="card"><div class="n">07</div><div class="name">Dashboard</div><div class="eng">App Runner</div><div class="desc">Public URL — no AWS login.</div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">The metric</p>
+    <h2>Reach, at three grains.</h2>
+    <p style="margin-top:12px;">
+      Reach is the count of unique individuals exposed within a window. Frequency inflates raw counts;
+      the whole job is to dedup people correctly — across days and across audiences.
+    </p>
+    <div class="grid3">
+      <div class="grain">
+        <div class="k">Exact</div>
+        <h3>Daily reach</h3>
+        <p><code>count(distinct individual_id)</code> read straight from a Gold snapshot — fast enough for a dashboard tile.</p>
+      </div>
+      <div class="grain">
+        <div class="k">Approximate · merged</div>
+        <h3>Cumulative reach</h3>
+        <p>HyperLogLog sketches <b style="color:var(--text)">merged across days</b> → deduped uniques, with no rescan of raw impressions.</p>
+      </div>
+      <div class="grain">
+        <div class="k">Approximate · merged</div>
+        <h3>Cross-segment reach</h3>
+        <p>Sketches <b style="color:var(--text)">merged across audiences</b> → unique individuals deduped between segments — the incremental-reach question.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Proof · live data</p>
+    <h2>The dedup is real, not decorative.</h2>
+    <p style="margin-top:12px;">
+      Campaign <span style="font-family:var(--mono);color:var(--text)">camp_finals</span>, sports segment,
+      the week of 2026-07-01 — queried live from the deployed lakehouse.
+    </p>
+    <div class="results">
+      <div class="tiles">
+        <div class="tile">
+          <div class="label">Daily reach</div>
+          <div class="num">298</div>
+          <div class="sub">unique individuals / day (exact)</div>
+        </div>
+        <div class="tile">
+          <div class="label">Cumulative · 5 days</div>
+          <div class="num accent">292</div>
+          <div class="sub">HLL-merged vs <b>1,490</b> naive sum-of-daily</div>
+        </div>
+        <div class="tile">
+          <div class="label">Sports + News</div>
+          <div class="num accent">563</div>
+          <div class="sub">merged vs <b>580</b> summed → 17 deduped</div>
+        </div>
+      </div>
+      <div class="proof">
+        <span class="dot" style="margin-top:7px;"></span>
+        <div><b>Near-total frequency overlap.</b> Cumulative reach (292) sits below the 1,490 sum-of-daily
+        because the same ~300 people are reached every day — exactly the high-frequency, low-incremental-reach
+        signal a sales team needs. Cross-segment merge removes the double-counted 17 who saw both sports and news.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Why HyperLogLog</p>
+    <h2>Sketches beside the counts.</h2>
+    <div class="note">
+      <p style="margin:0;">
+        Each Gold row stores an HLL sketch <b style="color:var(--text)">alongside</b> the exact count. That one
+        design choice is what lets reach compose: any window, any set of segments, merged at query time in
+        Athena/Presto — never re-scanning billions of raw impressions. A daily compaction job keeps the Iceberg
+        tables tight across bronze, silver, and gold.
+      </p>
+      <div class="chiplist">
+        <div class="chip"><b>store</b> &nbsp;cast(approx_set(individual_id) as varbinary)</div>
+        <div class="chip"><b>merge</b> &nbsp;cardinality(merge(cast(hll_sketch as HyperLogLog)))</div>
+        <div class="chip"><b>compact</b> &nbsp;OPTIMIZE … REWRITE DATA · VACUUM</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<footer>
+  <div class="wrap foot">
+    <div>
+      <div class="h">Stack</div>
+      <div class="v">Iceberg · EMR Serverless (Spark) · Athena/Presto · MWAA · Bedrock · App Runner · Terraform</div>
+    </div>
+    <div>
+      <div class="h">Region</div>
+      <div class="v">AWS us-east-1</div>
+    </div>
+    <div>
+      <div class="h">Live</div>
+      <div class="v"><a href="https://miatibcmck.us-east-1.awsapprunner.com" target="_blank" rel="noopener">dashboard</a> · <a href="https://github.com/rubinder/convergence_sample" target="_blank" rel="noopener">github</a></div>
+    </div>
+    <div>
+      <div class="h">Reviewer access</div>
+      <div class="v">Read-only IAM console user, auto-expiring after 5 days.</div>
+    </div>
+  </div>
+</footer>
