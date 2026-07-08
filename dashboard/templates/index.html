@@ -1,0 +1,70 @@
+<!-- Page content only; no external scripts (avoids CDN supply-chain risk). Charts are pure CSS/JS. -->
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Convergence Reach</title>
+<style>
+  :root {
+    --brand: #5b3df5;
+    --brand-soft: #9b8cff;
+    --ink: #1a1a2e;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --bg: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --ink:#e8e8f0; --muted:#9aa0ad; --line:#2a2a3a; --bg:#14141f; }
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, system-ui, Segoe UI, Roboto, sans-serif;
+    margin: 0; padding: 2rem; max-width: 960px; margin-inline: auto;
+    color: var(--ink); background: var(--bg);
+  }
+  h1 { color: var(--brand); margin: 0 0 .25rem; font-size: 1.9rem; }
+  .sub { color: var(--muted); margin: 0 0 1.5rem; }
+  .card {
+    border: 1px solid var(--line); border-radius: 14px; padding: 1.25rem 1.5rem;
+    margin: 1rem 0; background: color-mix(in srgb, var(--bg) 96%, var(--brand));
+  }
+  .controls { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; margin-bottom: 1rem; }
+  select, input, button {
+    padding: .5rem .6rem; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--bg); color: var(--ink); font-size: .95rem;
+  }
+  button { background: var(--brand); color: #fff; border: none; cursor: pointer; }
+  .bars { display: flex; align-items: flex-end; gap: .6rem; height: 220px; margin-top: .5rem; }
+  .bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+  .bar { width: 100%; background: var(--brand-soft); border-radius: 6px 6px 0 0; transition: height .4s; }
+  .bar.cum { background: var(--brand); }
+  .bar-val { font-size: .8rem; margin-bottom: .25rem; color: var(--ink); }
+  .bar-lbl { font-size: .72rem; color: var(--muted); margin-top: .35rem; text-align: center; }
+  .stat { display: inline-block; margin-right: 2rem; }
+  .stat b { display: block; font-size: 1.6rem; color: var(--brand); }
+  pre { white-space: pre-wrap; background: color-mix(in srgb, var(--bg) 90%, var(--muted)); padding: .75rem; border-radius: 8px; }
+  .muted { color: var(--muted); font-size: .85rem; }
+</style>
+
+<h1>Convergence Reach</h1>
+<p class="sub">Digital + linear, unified. Daily <b>exact</b> reach and HyperLogLog-merged <b>cumulative</b> / cross-segment reach — the count of unique individuals exposed.</p>
+
+<div class="card">
+  <div class="controls">
+    <label>Campaign <select id="campaign"></select></label>
+    <label>Segment <select id="segment"></select></label>
+    <button onclick="load()">Refresh</button>
+  </div>
+  <div id="stats"></div>
+  <div class="bars" id="bars"></div>
+  <p class="muted" id="note"></p>
+</div>
+
+<div class="card">
+  <h3>Ask the reach agent</h3>
+  <div class="controls">
+    <input id="q" size="60" style="flex:1" placeholder="e.g. cumulative reach of camp_finals for sports from 2026-07-01 to 2026-07-05" />
+    <button onclick="ask()">Ask</button>
+  </div>
+  <pre id="ans" class="muted">The agent answers using the same reach tools shown above.</pre>
+</div>
+
+<script src="/static/app.js"></script>
