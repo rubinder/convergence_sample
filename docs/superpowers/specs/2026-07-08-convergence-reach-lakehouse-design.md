@@ -23,7 +23,7 @@ Success = by tomorrow morning, a person with only a browser link can:
 
 | Decision | Choice |
 |---|---|
-| Runtime | **Real AWS** (account ready, deploy now) |
+| Runtime | **Real AWS**, region **us-east-1** (account ready, deploy now) |
 | Compute (ETL) | **PySpark on EMR Serverless** (bronze/silver) |
 | HLL sketches | **Athena/Presto** (`approx_set`/`merge`/`cardinality`) — NOT spark-alchemy |
 | IaC | **Terraform** (single root) |
