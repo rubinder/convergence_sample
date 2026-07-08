@@ -17,7 +17,7 @@ TBLPROPERTIES ('table_type'='ICEBERG', 'format'='parquet');
 
 CREATE TABLE IF NOT EXISTS convergence.daily_reach_snapshot (
   day date, campaign_id string, segment string, delivery_type string,
-  exact_reach bigint, impressions bigint, hll_sketch varbinary
+  exact_reach bigint, impressions bigint, hll_sketch binary
 ) PARTITIONED BY (day)
 LOCATION 's3://__BUCKET__/gold/'
 TBLPROPERTIES ('table_type'='ICEBERG', 'format'='parquet');

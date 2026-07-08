@@ -25,7 +25,8 @@ import sys
 bucket = sys.argv[1]
 sql = open("sql/ddl/create_tables.sql").read().replace("__BUCKET__", bucket)
 stmts = [s.strip() for s in sql.split(";") if s.strip()]
-print("\0".join(stmts), end="")
+# trailing NUL so `read -d ''` also yields the final statement
+print("\0".join(stmts) + "\0", end="")
 PY
 
 while IFS= read -r -d '' stmt; do
