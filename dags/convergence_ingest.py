@@ -46,6 +46,14 @@ with DAG(
         execution_role_arn=ROLE,
         job_driver=job("silver_conform.py", ["--bucket", BUCKET]),
     )
+    # idempotent gold: clear the snapshot, then rebuild it from silver, so a
+    # re-run replaces rather than duplicates rows (exact_reach is a SUM).
+    gold_clear = AthenaOperator(
+        task_id="gold_clear",
+        database="convergence",
+        workgroup="convergence-wg",
+        query="DELETE FROM convergence.daily_reach_snapshot",
+    )
     gold = AthenaOperator(
         task_id="gold",
         database="convergence",
@@ -59,4 +67,4 @@ with DAG(
             "GROUP BY event_day, campaign_id, segment, delivery_type"
         ),
     )
-    bronze >> silver >> gold
+    bronze >> silver >> gold_clear >> gold

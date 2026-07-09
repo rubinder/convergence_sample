@@ -39,19 +39,27 @@ submit "bronze_ingest.py" "\"--bucket\",\"${BUCKET}\""
 echo "== EMR silver =="
 submit "silver_conform.py" "\"--bucket\",\"${BUCKET}\""
 
-echo "== Athena gold snapshot + HLL sketches =="
+run_athena() { # $1 = sql ; returns after SUCCEEDED, exits on failure
+  local qid st
+  qid=$(aws athena start-query-execution --work-group "$ATHENA_WG" \
+        --query-string "$1" --query 'QueryExecutionId' --output text)
+  while true; do
+    st=$(aws athena get-query-execution --query-execution-id "$qid" \
+         --query 'QueryExecution.Status.State' --output text)
+    case "$st" in
+      SUCCEEDED) return 0 ;;
+      FAILED|CANCELLED)
+        aws athena get-query-execution --query-execution-id "$qid" \
+          --query 'QueryExecution.Status.StateChangeReason' --output text; exit 1 ;;
+      *) sleep 2 ;;
+    esac
+  done
+}
+
+echo "== Athena gold snapshot + HLL sketches (idempotent: delete window, then insert) =="
+# delete the window first so re-runs replace rather than duplicate snapshots
+run_athena "DELETE FROM convergence.daily_reach_snapshot WHERE day BETWEEN date '2026-07-01' AND date '2026-07-05'"
 GOLD=$(sed -e "s/__START__/2026-07-01/" -e "s/__END__/2026-07-05/" sql/gold_snapshot.sql)
-qid=$(aws athena start-query-execution --work-group "$ATHENA_WG" \
-      --query-string "$GOLD" --query 'QueryExecutionId' --output text)
-while true; do
-  st=$(aws athena get-query-execution --query-execution-id "$qid" \
-       --query 'QueryExecution.Status.State' --output text)
-  case "$st" in
-    SUCCEEDED) echo "  gold SUCCEEDED"; break ;;
-    FAILED|CANCELLED)
-      aws athena get-query-execution --query-execution-id "$qid" \
-        --query 'QueryExecution.Status.StateChangeReason' --output text; exit 1 ;;
-    *) sleep 2 ;;
-  esac
-done
+run_athena "$GOLD"
+echo "  gold SUCCEEDED"
 echo "pipeline complete."

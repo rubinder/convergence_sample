@@ -32,7 +32,9 @@ def main():
         "device",
         "ingest_date",
     ]
-    df.select(*cols).writeTo("glue.convergence.bronze_impressions").append()
+    # overwrite (not append) by ingest_date partition so re-ingesting the same
+    # landing data is idempotent instead of duplicating rows.
+    df.select(*cols).writeTo("glue.convergence.bronze_impressions").overwritePartitions()
     print(f"bronze rows written: {df.count()}")
     spark.stop()
 
