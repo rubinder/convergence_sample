@@ -22,3 +22,6 @@ aws-exports.json
 build/
 landing_local/
 .terraform.lock.hcl
+
+# Playwright MCP scratch output
+.playwright-mcp/
