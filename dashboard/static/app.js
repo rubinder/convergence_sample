@@ -77,4 +77,28 @@ async function ask() {
   ans.textContent = r.reply;
 }
 
-(async () => { await initDims(); await load(); })();
+async function loadInfra() {
+  let s;
+  try { s = await j("/api/infra"); } catch { return; }
+  const box = document.getElementById("lineage");
+  if (!box) return;
+  const stages = (s.lineage || []).map(st => {
+    const rows = st.rows == null ? "—" : Number(st.rows).toLocaleString();
+    return `<div class="stage">
+      <div class="layer">${st.layer}</div>
+      <div class="rows">${rows} <small>rows</small></div>
+      <div class="d">${st.desc}</div>
+    </div>`;
+  });
+  box.innerHTML = stages.join('<div class="arrow">&rarr;</div>');
+  const g = s.gold || {};
+  const pills = [];
+  if (g.latest_day) pills.push(`<span class="pill">Snapshot window <b>${g.earliest_day} → ${g.latest_day}</b></span>`);
+  if (g.campaigns) pills.push(`<span class="pill"><b>${g.campaigns}</b> campaigns</span>`);
+  if (g.segments) pills.push(`<span class="pill"><b>${g.segments}</b> segments</span>`);
+  document.getElementById("infra-pills").innerHTML = pills.join("");
+  document.getElementById("infra-note").textContent =
+    `Query engine: ${s.engine || "Athena"}. Live query latency ${s.latency_ms || 0} ms.`;
+}
+
+(async () => { await initDims(); await load(); await loadInfra(); })();

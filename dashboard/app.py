@@ -82,6 +82,15 @@ def dimensions():
         return {"campaigns": [], "segments": []}
 
 
+@app.get("/api/infra")
+def infra():
+    try:
+        return reach.pipeline_status()
+    except Exception:
+        log.exception("infra status failed")
+        raise HTTPException(status_code=503, detail="infra status unavailable")
+
+
 @app.post("/api/chat")
 def chat(body: dict):
     prompt = (body.get("prompt") or "").strip()

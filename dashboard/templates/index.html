@@ -51,10 +51,29 @@
   @media (max-width: 640px) { .conv { grid-template-columns: 1fr; } }
   pre { white-space: pre-wrap; background: color-mix(in srgb, var(--bg) 90%, var(--muted)); padding: .75rem; border-radius: 8px; }
   .muted { color: var(--muted); font-size: .85rem; }
+  .lineage { display: flex; align-items: stretch; gap: .5rem; flex-wrap: wrap; margin-top: .75rem; }
+  .stage { flex: 1; min-width: 150px; border: 1px solid var(--line); border-radius: 10px; padding: .75rem .85rem; background: var(--bg); }
+  .stage .layer { font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; color: var(--brand); font-weight: 700; }
+  .stage .rows { font-size: 1.5rem; font-weight: 700; color: var(--ink); margin: .15rem 0; }
+  .stage .rows small { font-size: .72rem; font-weight: 400; color: var(--muted); }
+  .stage .d { font-size: .74rem; color: var(--muted); }
+  .arrow { align-self: center; color: var(--brand-soft); font-size: 1.3rem; }
+  .pills { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .75rem; }
+  .pill { font-size: .78rem; border: 1px solid var(--line); border-radius: 999px; padding: .25rem .7rem; color: var(--muted); }
+  .pill b { color: var(--ink); }
+  @media (max-width: 640px) { .arrow { display: none; } }
 </style>
 
 <h1>Convergence Reach</h1>
 <p class="sub">Digital + linear, unified. Daily <b>exact</b> reach and HyperLogLog-merged <b>cumulative</b> / cross-segment reach — the count of unique individuals exposed.</p>
+
+<div class="card">
+  <h3 style="margin-top:0">Running on AWS — live pipeline</h3>
+  <p class="muted">Every number on this page is computed live by an AWS lakehouse: PySpark on <b>EMR Serverless</b> lands and conforms raw impressions (Bronze → Silver), and <b>Athena</b> builds the Gold reach snapshots + HyperLogLog sketches over <b>S3</b> and the <b>Glue</b> catalog. Counts below are queried in real time.</p>
+  <div class="lineage" id="lineage"></div>
+  <div class="pills" id="infra-pills"></div>
+  <p class="muted" id="infra-note"></p>
+</div>
 
 <div class="card">
   <div class="controls">

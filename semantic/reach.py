@@ -128,6 +128,79 @@ def get_convergence_reach(campaign, segment, start, end):
     }
 
 
+# ---- infrastructure / pipeline status (read-only, Athena/Glue only) ----
+
+# The medallion tables, in flow order, with the layer they represent.
+_LINEAGE = [
+    ("bronze_impressions", "Bronze", "Raw unified impressions (digital + linear)"),
+    ("silver_impressions", "Silver", "Conformed, deduped, typed"),
+    ("daily_reach_snapshot", "Gold", "Daily reach + HLL sketches (Athena)"),
+]
+
+_STATUS_CACHE = {"at": 0.0, "data": None}
+_STATUS_TTL_S = 60  # avoid hammering Athena on every page load
+
+
+def _counts_sql():
+    return " UNION ALL ".join(
+        f"select '{layer}' as layer, '{tbl}' as tbl, count(*) as n from {DB}.{tbl}"
+        for tbl, layer, _ in _LINEAGE
+    )
+
+
+def pipeline_status():
+    """Live proof-of-life for the AWS lakehouse: table lineage with row counts
+    and the gold snapshot's coverage. Cached briefly. Never raises — a degraded
+    field comes back as None so the panel still renders."""
+    now = time.time()
+    if _STATUS_CACHE["data"] is not None and now - _STATUS_CACHE["at"] < _STATUS_TTL_S:
+        return _STATUS_CACHE["data"]
+
+    t0 = time.time()
+    counts = {}
+    try:
+        for r in run_query(_counts_sql()):
+            counts[r["tbl"]] = int(r["n"])
+    except Exception:
+        counts = {}
+
+    coverage = {}
+    try:
+        rows = run_query(
+            "select cast(max(day) as varchar) as latest, "
+            "cast(min(day) as varchar) as earliest, "
+            "count(distinct campaign_id) as campaigns, "
+            "count(distinct segment) as segments "
+            f"from {DB}.daily_reach_snapshot"
+        )
+        if rows:
+            coverage = rows[0]
+    except Exception:
+        coverage = {}
+
+    data = {
+        "lineage": [
+            {
+                "table": tbl,
+                "layer": layer,
+                "desc": desc,
+                "rows": counts.get(tbl),
+            }
+            for tbl, layer, desc in _LINEAGE
+        ],
+        "gold": {
+            "latest_day": coverage.get("latest"),
+            "earliest_day": coverage.get("earliest"),
+            "campaigns": int(coverage["campaigns"]) if coverage.get("campaigns") else None,
+            "segments": int(coverage["segments"]) if coverage.get("segments") else None,
+        },
+        "engine": "Athena (Presto) over S3 + Glue catalog · EMR Serverless ETL",
+        "latency_ms": int((time.time() - t0) * 1000),
+    }
+    _STATUS_CACHE.update(at=now, data=data)
+    return data
+
+
 def list_campaigns():
     return [
         r["campaign_id"]
