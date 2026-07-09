@@ -235,6 +235,41 @@
   </section>
 
   <section>
+    <p class="eyebrow">Deployed · live infrastructure</p>
+    <h2>Real resources, not a mockup.</h2>
+    <p style="margin-top:12px;">
+      This runs on live AWS in us-east-1. The counts below are the actual state of the deployed
+      lakehouse — queryable in real time from the <a href="https://miatibcmck.us-east-1.awsapprunner.com" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;">public dashboard</a>,
+      which reads them straight from Glue + Athena on every load.
+    </p>
+    <div class="results">
+      <div class="tiles">
+        <div class="tile">
+          <div class="label">Bronze → Silver</div>
+          <div class="num">100K<span style="font-size:1rem;"> → 100K</span></div>
+          <div class="sub">raw → conformed impressions (EMR Spark)</div>
+        </div>
+        <div class="tile">
+          <div class="label">Gold snapshot</div>
+          <div class="num accent">150</div>
+          <div class="sub">daily reach rows + HLL sketches (Athena)</div>
+        </div>
+        <div class="tile">
+          <div class="label">EMR Serverless</div>
+          <div class="num">2 <span style="font-size:1rem;color:var(--good);">✓</span></div>
+          <div class="sub">successful Spark runs · 2026-07-08</div>
+        </div>
+      </div>
+      <div class="proof">
+        <span class="dot" style="margin-top:7px;"></span>
+        <div><b>3 tables in the Glue catalog</b> (bronze, silver, gold) over an S3 lakehouse, ETL by
+        EMR Serverless Spark, reach math and HyperLogLog in Athena workgroup <span style="font-family:var(--mono);color:var(--text)">convergence-wg</span>,
+        fronted by a public App Runner HTTPS URL. Orchestration (MWAA / Airflow 2.9.2) provisioned alongside.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
     <p class="eyebrow">The metric</p>
     <h2>Reach, at three grains.</h2>
     <p style="margin-top:12px;">
@@ -328,8 +363,8 @@
       <div class="v"><a href="https://miatibcmck.us-east-1.awsapprunner.com" target="_blank" rel="noopener">dashboard</a> · <a href="https://github.com/rubinder/convergence_sample" target="_blank" rel="noopener">github</a></div>
     </div>
     <div>
-      <div class="h">Reviewer access</div>
-      <div class="v">Read-only IAM console user, auto-expiring after 5 days.</div>
+      <div class="h">Access</div>
+      <div class="v">Public dashboard + this summary. No AWS login required.</div>
     </div>
   </div>
 </footer>
